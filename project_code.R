@@ -1,6 +1,6 @@
 # Jake and Ben final project code
 
-# setwd("C:\\Users\\Jake\\OneDrive - The University of Alabama\\ST 541 - R\\st541_final_project")
+setwd("C:\\Users\\Jake\\OneDrive - The University of Alabama\\ST 541 - R\\st541_final_project")
 
 library(ggplot2)
 theme_update(plot.title = element_text(hjust = 0.5))
@@ -55,16 +55,14 @@ for (i in 1:8) {
         )
 }
 
-attach(df)
+# Iterate through t-tests for ll variables
 
-outcome_ttest <- function(var_name) {
-  t.test(var_name~Outcome)
-}
 
 for (i in 1:8) {
-
-  t.test(formula(substitute(vars[i] ~ Outcome)), df)
-  
+  print(t.test(formula(paste("df$",vars[i],"~","df$Outcome",sep=""))))
 }
+#Two sample t-test is does not support difference for in means for BloodPressure (and barely supports SkinThickness)
 
-?substitute
+
+#another way to do all the t-tests
+#lapply(vars[-9], function(x) t.test(formula(paste("df$",x,"~","df$Outcome",sep=""))))
