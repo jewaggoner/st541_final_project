@@ -57,7 +57,7 @@ for (i in 1:8) {
 }
 
 #Independent-samples T-test
-t.test(df$Age~df$Outcome)
+
 # Iterate through t-tests for ll variables
 
 for (i in 1:8) {
@@ -85,5 +85,31 @@ pairs(df$Pregnancies~df$Glucose+df$BloodPressure+df$SkinThickness+df$Insulin+df$
 #plot the logged pairs
 #pairs(log(df$Pregnancies)~log(df$Glucose)+log(df$BloodPressure)+log(df$SkinThickness)+log(df$Insulin)+log(df$BMI)+log(df$DiabetesPedigreeFunction)+log(df$Age),pch = 20, main= "Pairwise Scatterplot",lower.panel=NULL)
 
+library(ggcorrplot)
+c2 <- cor_pmat(df_corr)
+ggcorrplot(c2)
+
+
+## Model Building
+
+### Full Model
+
+m1 <- glm(Outcome~., data=df)
+summary(m1)
+
+par(mfrow=c(2,2))
+
+
+### Backward Selection, BIC Criterion
+
+n <- length(m1$residuals)
+backBIC <- step(m1, direction="backward", data=df, k=log(n))
+backBIC$coefficients
+
+
+### Stepwise Selection, BIC Criterion
+
+stepwiseBIC <- step(m1, direction="both", data=df, k=log(n))
+stepwiseBIC$coefficients
 
 
