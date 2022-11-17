@@ -20,7 +20,6 @@ str(df)
 #768 observations with 9 variables
 
 # Visual Exploration of Data
-
 vars <- colnames(df)
 
 par(mfrow=c(3,3))
@@ -68,7 +67,7 @@ for (i in 1:8) {
 
 #another way to do all the t-tests
 #lapply(vars[-9], function(x) t.test(formula(paste("df$",x,"~","df$Outcome",sep=""))))
-
+#------------------------------------------
 
 ##Pairwise correlation coefficient and scatterplot
 
@@ -79,6 +78,14 @@ df_corr<- df[,1:8]
 c1<-cor(df_corr)
 chart.Correlation(c1,lower.panel = NULL, histogram=TRUE, pch=19)
 
+#scatter plot
+par(mfrow=c(3,3))
+for (i in 1:8) {
+  plot(df[,i], df$Outcome , xlab = vars[i], main = paste("plot of",vars[i]))
+}
+plot(df$DiabetesPedigreeFunction,df$Outcome)
+
+par(mfrow=c(1,2))
 #check for correlation between predictors
 pairs(df$Pregnancies~df$Glucose+df$BloodPressure+df$SkinThickness+df$Insulin+df$BMI+df$DiabetesPedigreeFunction+df$Age,pch = 20, main= "Pairwise Scatterplot",lower.panel=NULL)
 
@@ -89,27 +96,82 @@ library(ggcorrplot)
 c2 <- cor_pmat(df_corr)
 ggcorrplot(c2, type = 'upper', title='Correlation of Predictors', lab=TRUE)
 
+#------------------------------
 
 ## Model Building
 
 ### Full Model
-
-m1 <- glm(Outcome~., data=df)
+m1 <- glm(Outcome ~. ,family = binomial(), data=df)
 summary(m1)
 
-par(mfrow=c(2,2))
 
 
-### Backward Selection, BIC Criterion
+library(alr4)
+mmps(m1,layout=c(2,3))
 
-n <- length(m1$residuals)
+
+## Backward Selection, BIC Criterion
+
+n <- length(df$Outcome)
 backBIC <- step(m1, direction="backward", data=df, k=log(n))
 backBIC$coefficients
 
+anova(backBIC)
 
 ### Stepwise Selection, BIC Criterion
 
 stepwiseBIC <- step(m1, direction="both", data=df, k=log(n))
 stepwiseBIC$coefficients
 
+
+##Reduced model based on the most significant predictors
+m2 <- glm(Outcome~Pregnancies+Glucose + BloodPressure+BMI+DiabetesPedigreeFunction,family = binomial(), data=df)
+summary(m2)
+
+#difference between the two models
+anova(m2,m1,test="Chisq")
+
+library(alr4)
+mmps(m2,layout=c(2,3))
+
+
+
+
+
+## prediction and ROC
+pred <- predict(m2, type="response")
+
+cbind(df$Outcome, pred)
+
+
+# classification table / confusion matrix
+table(round(pred))
+sum(pred>=0.5)
+
+
+
+# table
+
+class.outcome <- data.frame(response = df$Outcome, predicted = round(pred,0))
+xtabs(~ predicted + response, data = class.outcome)
+
+# ROC curve/ AUC
+par(mfrow=c(1,1))
+library(pROC)
+outcome.roc <- roc(Outcome ~ pred, plot = TRUE, print.auc = TRUE)
+
+library(ROCR)    
+pred <- prediction(pred, Outcome)    
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")     
+plot(perf, col=rainbow(7), main="ROC curve", xlab="Specificity", 
+     ylab="Sensitivity")    
+abline(0, 1) #add a 45 degree line
+
+
+## goodness-of-fit
+library(ResourceSelection)
+hoslem.test(Outcome, fitted(m2), g=10)
+
+
+detach(df)
 
