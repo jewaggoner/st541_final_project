@@ -1,0 +1,146 @@
+---
+title: 'ST 541 Final Project: Analysis of Diabetes Risk Factors'
+author: "Benjamin A. Ajibade and Jacob E. Waggoner"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, error = FALSE)
+
+library("PerformanceAnalytics")
+library(corrplot)
+library(ggplot2)
+theme_update(plot.title = element_text(hjust = 0.5))
+
+df <- read.csv("diabetes.csv")
+```
+
+# Introduction
+
+  Diabetes is a very prevelent disease that affects the human body's core functions of getting energy from food. In the United States, more than 37 million adults have diabetes, and it is the seventh-leading cause of death. Concerningly, 1 of 5 adults with diabetes are not aware they have the disease. A lack of knowledge and action for diabetes patients leads to an increased liklihood of extreme complications such as hear disease, kidney disease, vision loss, and death.  
+  As a result of the severity of this disease, it is important that individuals are screened and informed of their risk level. This is important because diabetes can be present in a person without any obvious symptoms for a long period of time, and early detection allows for better outcomes. Understanding of the risk levels for those without diabetes is also important, because preventative measures can be taken before the disease is contracted.  
+  The objective of this study is to determine which clinical measurements and records make individuals more or less susceptible to diabetes. Our key research question is as follows:
+
+> How can clinical datapoints be used to determine an individual's risk of having diabetes?
+
+  The methodology we used to accomplish this goal was based around performing a logistic regression to attain a ratio, between 0 and 1, that a person would be diagnosed with diabetes (outcome 1). Before constructing and assessing this model, we conducted data visualizations and statistical tests that would help us understand the data and what outcomes we should expect from our model. The data used to perform this analysis and modeling comes from the United States' National Institute of Diabetes and Digestive and Kidney Diseases and was downloaded from Kaggle.
+
+
+# Data Exploration
+
+## Variables
+
+  The dataset contains 8 numeric predictors and one binary outcome. This aligns with the requrients for multiple logistic regression. Descriptions of each variable are:
+  
+* **Pregnancies**: Number of times pregnant
+* **Glucose**: Plasma glucose concentration from an oral glucose tolerance test
+* **Blood-Pressure**: Diastolic blood pressure (mm Hg)
+* **Skin-Thickness**: Triceps skin fold thickness (mm)
+* **Insulin**: 2-Hour serum insulin level (mu U/ml)
+* **BMI**: Body mass index (weight in kg/ (height in m) ^2)
+* **DiabetesPedigreeFunction**: Likelihood of diabetes based on family history
+* **Age**: Age (in years) of the individual in observation
+* **Outcome**: The target variable, a binary variable of 0 or 1, in which 1 is interpreted as "tested positive for diabetes"
+
+  The first step in our data exploration was to assess the data quality and structure. We viewed he first few rows of the dataset to visually assess the data. We can see that out of our eight numeric variables, only two, BMI and the pedigree function, are continuous, and the rest are discrete.
+
+```{r}
+head(df)
+```
+
+
+  We also generated summary statistics of the data, as shown below. In addition to explaining the distributions and central tendancies of each variable, the output also demonstrated that the dataset contained no null values.
+
+```{r}
+summary(df)
+```
+
+## Variable Distributions
+
+  Our next step in data exploration was to assess the distributions of all our variables. We generated the following histograms for this assessment.
+
+```{r}
+vars <- colnames(df)
+
+par(mfrow=c(3,3))
+for (i in 1:9) {
+  hist(df[,i], xlab = vars[i], main = paste("Histogram of",vars[i]))
+}
+```
+
+  From these visualizations, we determined that Pregnancies, SkinThickness, Insulin, DiabetesPedigree, and Age were right-skewed and that Glucose, Blood Pressure, and BMI were approximately normal. We observed an irregularity inthe glucose distribution in which there were a few values at 0, far from the normal range of that distribution. It would seem counterintuitive that a human could survive with such a low glucose level, and these may be an indicator of a missing measurement. We also observed in the "Pregnancies" histogram that the mode and a large portion of the observations had zero pregnancies. This suggests that the sample, of which we do not have extensive information about, does include both men and women.
+
+## Interactions with Target
+
+  Following our assessment of the variables within the entire sample, we then visualized the variables by target class to see which variables differed greatly in those who weren't diagnosed with diabetes, and those who were. This gave us an initial idea of which variables would provide value as a predictor, based on which have less overlap between the central areas of the boxplot between the two outcomes.
+
+```{r, out.width = "3in"}
+par(mar=c(10,10,2,2))
+for (i in 1:8) {
+  print(ggplot(data=df,aes_string(y=vars[i]))+
+          geom_boxplot()+
+          facet_wrap(~Outcome)+
+          ggtitle(paste("Boxplot of",vars[i], "by Outcome"))
+        )
+}
+```
+
+# Statistical Tests
+
+## Differences Between Outcome Groups
+
+  Building upon our previous exploratory analysis, we wanted to assess which predictors had statistically significant differences in the means between the two outcome classes. This is an objective approach to glean similar information from the class boxplots in the previous section and will give us another indication of which predictors will be useful. To test this, we utilized Welch Two-Sample T-Tests for each predictor. The results are shown below.
+  
+```{r}
+for (i in 1:8) {
+  print(t.test(formula(paste("df$",vars[i],"~","df$Outcome",sep=""))))
+}
+```
+
+  Six of the eight variables resulted in p-values below the .05 alpha level in our T-tests. This indicated that the null hypothesis was rejected, and there is a statistically significant difference between the means for a positive diabetes result (1) and a negative diabetes result (0). For Blood Pressure and Skin Thickness, the p-value was higher than .05 and the null hypothesis was not rejected, indicating that there is no difference between the means for each outcome group. As a result, these two predictors will probably be less valuable for predicting the diabetes outcome than the six with a statistically significant difference in means.
+
+## Correlation Between Predictors
+
+  We were also interested in whether any of the predictors had cross-correlations that may be of note when building our model. To do this, we calculated correlation values between all predictors. We also plotted these to provide a visual representation. We can see that most of our predictors have a low or non-existant correlation coeffecient; however, the correlation between BMI and Pregnancies stands out as it is the highest at .62.
+  
+```{r}
+#remove outcome
+df_corr<- df[,1:8]
+
+library(ggcorrplot)
+c2 <- cor_pmat(df_corr)
+ggcorrplot(c2, type = 'upper', title='Correlation of Predictors', lab=TRUE)
+```
+
+# Statistical Modeling
+
+After concluding our exploratory analysis, we moved on to developing a statistical model to explain how each clinical predictor related to the diabetes outcome, and to calculate risk scores for our sample.
+
+## Model Selection
+
+## Model Interpretation
+
+## Model Adequacy
+
+## Model Accuracy
+
+# Conclusion
+
+In summary, we see that ... greatly increases an individual's chances of being diagnosed with diabetes. This information would be valuable to researchers and medical practitioners looking for early warning signs of diabetes. Individuals who are aware that they have these high-risk traits could take more preventative measures and be screened for diabetes more often. The model as a whole could be used in the future to develop diabetes risk scores for medical patients. If an individual sees their risk score is getting closer to 1, or rising in that direction, they should be taking more preventative measures. Some limitations of this model for application in a clinical setting is that individuals may not have all the measurements that are necessary. Some of the predictors, such as glucose and insulin, are not measured frequently in doctors' visits unless the patient's risk of certain diseases is high. In conclusion, the model ... is/is not... an accurate predictor of whether an individual has diabetes and can be used to improve medical outcomes.
+
+# References
+
+Data: https://www.kaggle.com/datasets/mathchi/diabetes-data-set
+
+Diabetes Information: https://www.cdc.gov/diabetes/basics/diabetes.html
+
+# Appendix
+
+
+```{r, include = TRUE, results=FALSE}
+
+#Paste Code Here
+print('hello world')
+
+```

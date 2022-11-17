@@ -50,12 +50,12 @@ hist(df$Pregnancies, main ="Histogram of Pregnancies", xlab = "Pregnancy")
 
 for (i in 1:8) {
   print(ggplot(data=df,aes_string(y=vars[i]))+
-          geom_boxplot()+
+          geom_boxplot(width=.5)+
           facet_wrap(~Outcome)+
           ggtitle(paste("Boxplot of",vars[i], "by Outcome"))
         )
 }
-
+?geom_boxplot
 #Independent-samples T-test
 
 # Iterate through t-tests for ll variables
@@ -87,7 +87,7 @@ pairs(df$Pregnancies~df$Glucose+df$BloodPressure+df$SkinThickness+df$Insulin+df$
 
 library(ggcorrplot)
 c2 <- cor_pmat(df_corr)
-ggcorrplot(c2)
+ggcorrplot(c2, type = 'upper', title='Correlation of Predictors', lab=TRUE)
 
 
 ## Model Building
