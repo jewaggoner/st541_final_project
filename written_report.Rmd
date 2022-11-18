@@ -119,15 +119,101 @@ After concluding our exploratory analysis, we moved on to developing a statistic
 
 ## Model Selection
 
-## Model Interpretation
+### Full Model
+
+We started by plugging in all predictors into the model
+```{r}
+m1 <- glm(Outcome ~. ,family = binomial(), data=df)
+summary(m1)
+```
+ Despite being significant the DiabetesPedigreeFunction has a high standard error. A quick look at the variance inflation factor for the predictor shows that there is no redundant predictor.
+```{r}
+library(car)
+vif(m1)
+
+```
+
+## Backward Selection, BIC Criterion
+
+Backward elimination starts with all potential predictor variables in the regression model.This amounts to deleting the predictor with the largest p -value each time. BIC has a strict penalty and we expect a reduced number of predictors with good significance at the end of the process. Final model: Outcome ~ Pregnancies + Glucose + BMI + DiabetesPedigreeFunction
+
+```{r}
+
+n <- length(df$Outcome)
+backBIC <- step(m1, direction="backward", data=df, k=log(n))
+backBIC$coefficients
+```
+### Stepwise Selection, BIC Criterion
+  
+  Using BIC criteria Stepwise selects 4 variables: Pregnancies, Glucose, BMI and DiabetesPedigreeFunction. Procedure starts with no potential predictor variables in the regression equation. Then, it adds the predictor with the smallest p-value. Next, it adds second predictor with smallest p-value while checking if we can drop any previously added variable. This process is continued until adding an additional predictor does not yield P-value below requirement.
+Final model: Outcome ~ Pregnancies + Glucose + BMI + DiabetesPedigreeFunction
+
+```{r}
+stepwiseBIC <- step(m1, direction="both", data=df, k=log(n))
+stepwiseBIC$coefficients
+```
+ The Backward selection BIC and Hybrid BIC arrives at the same predictors.
+ 
+
+## What is the final model of your recommendation?
+  Backward selection with BIC selected 4 variables  and BIC selected 4 variables.Any of the two BIC is preferred because both models have similarly adjusted R-squared and anyone with less variables is preferred.
+
+## Reduced model based on the most significant predictors
+```{r}
+
+m2 <- glm(Outcome~Pregnancies+Glucose + BloodPressure+BMI+DiabetesPedigreeFunction,family = binomial(), data=df)
+summary(m2)
+```
+```{r}
+#difference between the two models
+anova(m2,m1,test="Chisq")
+```
+ All of the regression coefficients in the  model are now highly significant at the 5% level. The coefficients of the predictors Pregnancies, Glucose, BMI and DiabetesPedigreeFunction are positive implying that (all other things equal) higher Pregnancies, Glucose, BMI and DiabetesPedigreeFunction increases the chance of being diabetes patient as one would expect. However the coefficient of BloodPressure is negative.
 
 ## Model Adequacy
+Marginal model plots for model
+
+```{r warning=FALSE}
+library(alr4)
+mmps(m2,layout=c(2,3))
+```
+```{r}
+## goodness-of-fit
+library(ResourceSelection)
+hoslem.test(df$Outcome, fitted(m2), g=10)
+```
+
 
 ## Model Accuracy
 
+### ROC
+```{r}
+# prediction 
+pred <- predict(m2, type="response")
+head(cbind(df$Outcome, pred))
+
+# classification table / confusion matrix
+table(round(pred))
+sum(pred>=0.5)
+
+# table
+class.outcome <- data.frame(response = df$Outcome, predicted = round(pred,0))
+xtabs<-xtabs(~ predicted + response, data = class.outcome)
+xtabs
+```
+  Out of 768 observations, We see that the model predicted 555 zeros and 213 ones. Out of the 213 actual diabetes patient, The model correctly predicted 154(True positive 72.3) and misclassified 59(False Positive 27.7). Also for the other part, the model correctly predicted 441 patient without diabetes(True Negative 79.5) and wrongly predicted 114 (False Negative 20.5)
+
+```{r}
+# ROC curve/ AUC
+par(mfrow=c(1,1))
+library(pROC)
+outcome.roc <- roc(df$Outcome ~ pred, plot = TRUE, print.auc = TRUE)
+```
+
+
 # Conclusion
 
-In summary, we see that ... greatly increases an individual's chances of being diagnosed with diabetes. This information would be valuable to researchers and medical practitioners looking for early warning signs of diabetes. Individuals who are aware that they have these high-risk traits could take more preventative measures and be screened for diabetes more often. The model as a whole could be used in the future to develop diabetes risk scores for medical patients. If an individual sees their risk score is getting closer to 1, or rising in that direction, they should be taking more preventative measures. Some limitations of this model for application in a clinical setting is that individuals may not have all the measurements that are necessary. Some of the predictors, such as glucose and insulin, are not measured frequently in doctors' visits unless the patient's risk of certain diseases is high. In conclusion, the model ... is/is not... an accurate predictor of whether an individual has diabetes and can be used to improve medical outcomes.
+In summary, we see that higher number of Pregnancies, Glucoselevel, BMI and DiabetesPedigreeFunction increases the chance of being diabetes greatly (with diabetePedegree being the most significant factor), while a low low blood pressure increases an individual's chances of being diagnosed with diabetes. This information would be valuable to researchers and medical practitioners looking for early warning signs of diabetes. Individuals who are aware that they have these high-risk traits could take more preventative measures and be screened for diabetes more often. The model as a whole could be used in the future to develop diabetes risk scores for medical patients. If an individual sees their risk score is getting closer to 1, or rising in that direction, they should be taking more preventative measures. Some limitations of this model for application in a clinical setting is that individuals may not have all the measurements that are necessary. Some of the predictors, such as glucose and insulin, are not measured frequently in doctors' visits unless the patient's risk of certain diseases is high. In conclusion, at AUC 83.7, the model is a relatively accurate to predict whether an individual has diabetes and can be used to improve medical outcomes.
 
 # References
 
@@ -139,8 +225,6 @@ Diabetes Information: https://www.cdc.gov/diabetes/basics/diabetes.html
 
 
 ```{r, include = TRUE, results=FALSE}
-
-#Paste Code Here
-print('hello world')
-
-```
+print('Hello World')
+  
+      ```
