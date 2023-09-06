@@ -1,5 +1,4 @@
 # st541_final_project
-### Objective
 The objective is to predict based on diagnostic measurements whether a patient has diabetes or has high likelihood of having it.
 ### About Dataset
 The dataset which was originally from the National Institute of Diabetes and Digestive and Kidney Diseases.
